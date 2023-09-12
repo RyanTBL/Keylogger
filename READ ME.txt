@@ -4,12 +4,11 @@ Keylogger
 |Description
 +----------
 
-...
+This script is designed to quietly capture keystrokes and store them in a text file, the file is then emailed to a specific address.
 
 +----------------------------------------|
 |Information
 +----------
 
-Build Time: 	July 2023
-Language: 	Python
+Language: 	    Python
 

